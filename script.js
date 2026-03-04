@@ -1,26 +1,19 @@
-/**
- * AI Consulting Site — Ryan Sylvestri
- * Interactive behaviors and smooth scroll
- */
-
-// ========================================
-// Mobile Navigation Toggle
-// ========================================
-
+const nav = document.getElementById('nav');
 const navToggle = document.querySelector('.nav-toggle');
 const navMenu = document.querySelector('.nav-menu');
 const navLinks = document.querySelectorAll('.nav-link');
 
-if (navToggle) {
+if (navToggle && navMenu) {
     navToggle.addEventListener('click', () => {
         navMenu.classList.toggle('active');
-        
-        // Animate hamburger icon
+
         const spans = navToggle.querySelectorAll('span');
-        if (navMenu.classList.contains('active')) {
-            spans[0].style.transform = 'rotate(45deg) translateY(10px)';
+        const isOpen = navMenu.classList.contains('active');
+
+        if (isOpen) {
+            spans[0].style.transform = 'translateY(6px) rotate(45deg)';
             spans[1].style.opacity = '0';
-            spans[2].style.transform = 'rotate(-45deg) translateY(-10px)';
+            spans[2].style.transform = 'translateY(-6px) rotate(-45deg)';
         } else {
             spans[0].style.transform = '';
             spans[1].style.opacity = '';
@@ -29,10 +22,10 @@ if (navToggle) {
     });
 }
 
-// Close mobile menu when clicking a link
-navLinks.forEach(link => {
+navLinks.forEach((link) => {
     link.addEventListener('click', () => {
-        navMenu.classList.remove('active');
+        navMenu?.classList.remove('active');
+
         const spans = navToggle?.querySelectorAll('span');
         if (spans) {
             spans[0].style.transform = '';
@@ -42,128 +35,60 @@ navLinks.forEach(link => {
     });
 });
 
-// ========================================
-// Scroll Effects
-// ========================================
-
-const nav = document.getElementById('nav');
-let lastScrollY = window.scrollY;
-
 window.addEventListener('scroll', () => {
-    // Add scrolled class to nav for backdrop effect
-    if (window.scrollY > 50) {
+    if (!nav) return;
+    if (window.scrollY > 28) {
         nav.classList.add('scrolled');
     } else {
         nav.classList.remove('scrolled');
     }
-    
-    lastScrollY = window.scrollY;
 });
 
-// ========================================
-// Smooth Scroll for Anchor Links
-// ========================================
+document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener('click', (event) => {
+        const href = anchor.getAttribute('href');
+        if (!href || href === '#') return;
 
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        const href = this.getAttribute('href');
-        
-        // Don't prevent default for empty hash
-        if (href === '#') return;
-        
-        e.preventDefault();
-        
         const target = document.querySelector(href);
-        if (target) {
-            const navHeight = nav.offsetHeight;
-            const targetPosition = target.offsetTop - navHeight;
-            
-            window.scrollTo({
-                top: targetPosition,
-                behavior: 'smooth'
-            });
-        }
+        if (!target) return;
+
+        event.preventDefault();
+        const navHeight = nav ? nav.offsetHeight : 0;
+        const top = target.offsetTop - navHeight + 1;
+
+        window.scrollTo({
+            top,
+            behavior: 'smooth'
+        });
     });
 });
 
-// ========================================
-// Intersection Observer for Fade-In Animations
-// ========================================
-
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
+const revealElements = document.querySelectorAll('.reveal');
+if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                obs.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.14,
+        rootMargin: '0px 0px -40px 0px'
     });
-}, observerOptions);
 
-// Observe service cards for staggered fade-in
-const serviceCards = document.querySelectorAll('.service-card');
-serviceCards.forEach((card, index) => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(30px)';
-    card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
-    observer.observe(card);
-});
-
-// Observe other sections
-const sections = document.querySelectorAll('.about-content, .about-highlights, .contact-content');
-sections.forEach(section => {
-    section.style.opacity = '0';
-    section.style.transform = 'translateY(30px)';
-    section.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-    observer.observe(section);
-});
-
-// ========================================
-// CTA Button Interactions
-// ========================================
-
-const ctaButtons = document.querySelectorAll('.btn-primary');
-ctaButtons.forEach(btn => {
-    btn.addEventListener('mouseenter', () => {
-        btn.style.transform = 'translateY(-2px) scale(1.02)';
+    revealElements.forEach((el, index) => {
+        el.style.transitionDelay = `${Math.min(index * 35, 220)}ms`;
+        observer.observe(el);
     });
-    
-    btn.addEventListener('mouseleave', () => {
-        btn.style.transform = '';
-    });
-});
+} else {
+    revealElements.forEach((el) => el.classList.add('visible'));
+}
 
-// ========================================
-// Service Card Click Tracking (Optional)
-// ========================================
-
-serviceCards.forEach(card => {
-    const tier = card.classList.contains('tier-1') ? 'Foundations' :
-                 card.classList.contains('tier-2') ? 'Builder' :
-                 card.classList.contains('tier-3') ? 'Expert' :
-                 card.classList.contains('tier-4') ? 'Done-For-You' : 'Unknown';
-    
-    card.addEventListener('click', (e) => {
-        // Only track if not clicking the CTA button
-        if (!e.target.closest('.btn')) {
-            console.log(`Service card clicked: ${tier}`);
-            // Could add analytics tracking here
-        }
-    });
-});
-
-// ========================================
-// Keyboard Navigation Support
-// ========================================
-
-document.addEventListener('keydown', (e) => {
-    // Escape key closes mobile menu
-    if (e.key === 'Escape' && navMenu.classList.contains('active')) {
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && navMenu?.classList.contains('active')) {
         navMenu.classList.remove('active');
+
         const spans = navToggle?.querySelectorAll('span');
         if (spans) {
             spans[0].style.transform = '';
@@ -173,32 +98,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// ========================================
-// Performance: Debounce Scroll Events
-// ========================================
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+const yearNode = document.getElementById('year');
+if (yearNode) {
+    yearNode.textContent = String(new Date().getFullYear());
 }
-
-// Apply debounce to resource-heavy scroll handlers if needed
-const debouncedScroll = debounce(() => {
-    // Additional scroll-based features can go here
-}, 100);
-
-window.addEventListener('scroll', debouncedScroll);
-
-// ========================================
-// Initialize
-// ========================================
-
-console.log('🚀 AI Consulting site initialized');
-console.log('Built by Ryan Sylvestri — Production AI Systems');
